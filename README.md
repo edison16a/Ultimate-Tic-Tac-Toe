@@ -5,11 +5,17 @@ Ready to challenge your brain and have fun? Dive into the exciting world of Ulti
 
 FEATURES YOU'LL LOVE:
 🧠 Strategic Gameplay: A dynamic 9x9 grid that combines small victories to claim the bigger board. Can you outsmart your opponent?
+
 🤖 Play Against a Smart Bot: Perfect your skills and take on a challenging AI designed to keep you on your toes.
+
 👫 2-Player Mode: Face off against friends and family in an epic battle of strategy and skill.
+
 🎨 Stunning Design: Enjoy a clean, modern interface with customizable color schemes and animations.
+
 🎯 Unique Rules: Send opponents to specific boards or claim the advantage with strategic moves.
+
 ⚡ Fast-Paced Fun: Quick turns keep the game exciting and engaging!
+
 
 WHY ULTIMATE TIC TAC TOE?
 
