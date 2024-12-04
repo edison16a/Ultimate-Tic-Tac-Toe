@@ -27,7 +27,22 @@ struct ContentView: View {
                             currentImageIndex = (currentImageIndex % imageCount) + 1 // Cycle through images
                
                     }
+                
+                Button(action: {}) {
+                    NavigationLink(destination: OnlineView()) {
+                        Text("Play Online")
+                            .font(.headline)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                }
 
+
+
+
+                
                 NavigationLink(destination: GameView(isBot: true), tag: .bot, selection: $gameMode) {
                     Button(action: {
                         gameMode = .bot
