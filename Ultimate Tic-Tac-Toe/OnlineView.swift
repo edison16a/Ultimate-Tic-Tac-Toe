@@ -9,7 +9,7 @@ struct OnlineView: View {
     @State private var inMatch: Bool = false
     @State private var showLeaderboard: Bool = false
     @State private var timer = Timer.publish(every: 10.0, on: .main, in: .common).autoconnect()
-
+    @State private var matchEndedEarly: Bool = false
     // State variables for the playable board
     @State private var board: [[String]] = Array(repeating: Array(repeating: "", count: 3), count: 3)
     @State private var currentPlayer: String = "X"
@@ -47,7 +47,10 @@ struct OnlineView: View {
                         checkGameOver()
                     }
 
-                    Button(action: finishMatch) {
+                    Button(action: {
+                        matchEndedEarly = true // Mark the match as ended early
+                        finishMatch()          // Call finishMatch to process the early end
+                    }) {
                         Text("End Match Early")
                             .font(.headline)
                             .padding()
@@ -56,8 +59,7 @@ struct OnlineView: View {
                             .cornerRadius(10)
                     }
                     .padding()
-                }
-            } else {
+                }            } else {
                 Button(action: findOpponent) {
                     Text("Find Opponent")
                         .font(.headline)
@@ -102,18 +104,48 @@ struct OnlineView: View {
 
     func finishMatch() {
         inMatch = false
-        let win = Bool.random() // Simulate win/loss
-        if win {
-            bars += 1
-            if bars >= 3 {
-                rankUp()
-            }
-        } else {
+
+        // If the match was ended early, simulate a loss
+        if matchEndedEarly {
             bars -= 1
             if bars < 0 {
-                rankDown()
+                rankDown()  // Handle rank down if bars go negative
+            }
+        } else {
+            // If there is a winner, update bars accordingly
+            if let winner = GameLogic.checkWinner(on: board) {
+                // If 'X' wins (player wins)
+                if winner == "X" {
+                    bars += 1
+                    if bars >= 3 {
+                        rankUp()  // Rank up if bars reach 3
+                    }
+                } else if winner == "O" { // If 'O' wins (bot wins)
+                    if rank != "Bronze" {
+                        bars -= 1
+                        if bars < 0 {
+                            rankDown()  // Handle rank down if bars go negative
+                        }
+                    } else if bars > 0 {
+                        bars -= 1  // In Bronze, if bars > 0, just decrease bars
+                    }
+                }
+            } else if GameLogic.isDraw(on: board) {
+                // If the game is a draw, do nothing with bars or rank
+                // You can decide what to do with bars/rank on draw, if needed
             }
         }
+
+        // Handle "Champion" rank ELO adjustment
+        if rank == "Champion" {
+            if let winner = GameLogic.checkWinner(on: board), winner == "X" {
+                elo += Int.random(in: 10...25)  // Increase ELO if the player wins
+            } else if let winner = GameLogic.checkWinner(on: board), winner == "O" {
+                elo = max(elo - Int.random(in: 10...25), 0)  // Decrease ELO if the bot wins
+            }
+        }
+
+        // Save progress to UserDefaults
         saveProgress()
     }
 
