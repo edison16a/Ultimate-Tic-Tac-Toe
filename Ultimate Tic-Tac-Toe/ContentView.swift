@@ -167,14 +167,24 @@ struct GameView: View {
     }
 
     private func botMove() {
-        guard subBoardIndex != nil else { return }
+        guard winner == nil else { return } // Skip if there's a winner
 
-        let validMoves = board[subBoardIndex!].enumerated().filter { $0.element.isEmpty }.map { $0.offset }
-        guard let randomMove = validMoves.randomElement() else { return }
-
-        board[subBoardIndex!][randomMove] = "O"
-        subBoardIndex = randomMove
-        activePlayer = "X"
+        // Randomly select a valid move for the bot
+        if let activeSubBoard = subBoardIndex, mainBoard[activeSubBoard].isEmpty {
+            let availableSlots = board[activeSubBoard].enumerated().filter { $0.element.isEmpty }.map { $0.offset }
+            if let randomSlot = availableSlots.randomElement() {
+                handleMove(activeSubBoard, randomSlot)
+            }
+        } else {
+            // Select any valid sub-board and slot
+            let availableBoards = board.enumerated().filter { mainBoard[$0.offset].isEmpty }.map { $0.offset }
+            if let randomBoard = availableBoards.randomElement() {
+                let availableSlots = board[randomBoard].enumerated().filter { $0.element.isEmpty }.map { $0.offset }
+                if let randomSlot = availableSlots.randomElement() {
+                    handleMove(randomBoard, randomSlot)
+                }
+            }
+        }
     }
 
     private func resetGame() {
