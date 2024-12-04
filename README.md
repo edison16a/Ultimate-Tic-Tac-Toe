@@ -12,8 +12,6 @@ FEATURES YOU'LL LOVE:
 
 👫 2-Player Mode: Face off against friends and family in an epic battle of strategy and skill.
 
-🎨 Stunning Design: Enjoy a clean, modern interface with customizable color schemes and animations.
-
 🎯 Unique Rules: Send opponents to specific boards or claim the advantage with strategic moves.
 
 ⚡ Fast-Paced Fun: Quick turns keep the game exciting and engaging!
