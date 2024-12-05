@@ -8,7 +8,7 @@ struct ContentView: View {
     private let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        NavigationView {
+        NavigationStack{
             VStack(spacing: 20) {
                 Text("Ultimate Tic Tac Toe")
                     .font(.largeTitle)

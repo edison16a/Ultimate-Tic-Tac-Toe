@@ -117,6 +117,7 @@ struct OnlineView: View {
         .onAppear {
             addToLeaderboardIfEligible()
         }
+        .background(Color(UIColor.systemGray4)).ignoresSafeArea()
         .onAppear(perform: loadProgress)
         .onReceive(timer) { _ in
             updateLeaderboard()
@@ -126,7 +127,7 @@ struct OnlineView: View {
     
     private func addToLeaderboardIfEligible() {
         // Check if the user's elo qualifies
-        if elo >= 0 {
+        if elo >= 300 {
             // Calculate the current rank
             let rank = calculateGlobalRank(userElo: elo, leaderboard: leaderboard)
             let nameWithRank = "\(rank). You (GM)"
@@ -353,6 +354,7 @@ struct GameBoardView: View {
                 }
             }
         }
+        .background(Color(UIColor.systemGray4)).ignoresSafeArea()
     }
 
     func makeBotMove() {
