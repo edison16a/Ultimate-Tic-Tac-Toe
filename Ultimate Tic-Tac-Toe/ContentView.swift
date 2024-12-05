@@ -30,9 +30,10 @@ struct ContentView: View {
                 
                 Button(action: {}) {
                     NavigationLink(destination: OnlineView()) {
-                        Text("Play Online")
-                            .font(.headline)
+                        Text("Play Ranked Online")
+                            .font(.title2)
                             .padding()
+                            .frame(maxWidth: .infinity)
                             .background(Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)

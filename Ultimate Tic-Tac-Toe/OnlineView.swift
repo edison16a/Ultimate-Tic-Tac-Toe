@@ -8,17 +8,23 @@ struct OnlineView: View {
     @State private var opponentName: String = ""
     @State private var inMatch: Bool = false
     @State private var showLeaderboard: Bool = false
-    @State private var timer = Timer.publish(every: 10.0, on: .main, in: .common).autoconnect()
+    @State private var timer = Timer.publish(every: Double.random(in: 10...25), on: .main, in: .common).autoconnect()
     @State private var matchEndedEarly: Bool = false
     // State variables for the playable board
     @State private var board: [[String]] = Array(repeating: Array(repeating: "", count: 3), count: 3)
     @State private var currentPlayer: String = "X"
     @State private var botMovePending: Bool = false
+    @State private var matchmaking: Bool = false
 
     var body: some View {
         VStack {
             Text("Rank: \(rank)")
                 .font(.title)
+                .padding()
+            
+            Text("Gain 1 bar each win. Reach 3 to increase your rank. After Reaching Max Rank (Champion) You Will Have An Elo and Can Get on the Leadeboard.\n Reach 1000 Elo To Become an Official GrandMaster (GM)")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
                 .padding()
 
             Image(rank.lowercased())
@@ -34,9 +40,20 @@ struct OnlineView: View {
             } else {
                 ProgressBar(bars: $bars)
                     .padding()
+                    .cornerRadius(5)
             }
 
-            if inMatch {
+            if matchmaking {
+                VStack {
+                    Text("Matchmaking...")
+                        .font(.headline)
+                        .padding()
+
+                    ProgressView() // Spinning loader to simulate matchmaking
+                        .scaleEffect(1.5)
+                        .padding()
+                }
+            } else if inMatch {
                 VStack {
                     Text("Playing against \(opponentName)...")
                         .font(.headline)
@@ -51,7 +68,7 @@ struct OnlineView: View {
                         matchEndedEarly = true // Mark the match as ended early
                         finishMatch()          // Call finishMatch to process the early end
                     }) {
-                        Text("End Match Early")
+                        Text("Forfeit")
                             .font(.headline)
                             .padding()
                             .background(Color.red)
@@ -59,9 +76,10 @@ struct OnlineView: View {
                             .cornerRadius(10)
                     }
                     .padding()
-                }            } else {
+                }
+            } else {
                 Button(action: findOpponent) {
-                    Text("Find Opponent")
+                    Text("Play Ranked Match")
                         .font(.headline)
                         .padding()
                         .background(Color.blue)
@@ -71,7 +89,8 @@ struct OnlineView: View {
                 .padding()
             }
 
-            Button("Leaderboard") {
+
+            Button("GrandMaster Leaderboard") {
                 showLeaderboard = true
             }
             .font(.headline)
@@ -90,16 +109,22 @@ struct OnlineView: View {
     func updateLeaderboard() {
         leaderboard = leaderboard.map { entry in
             var updatedEntry = entry
-            updatedEntry.elo += Int.random(in: 10...25)
+            updatedEntry.elo += Int.random(in: -3...5)
             return updatedEntry
         }
         leaderboard.sort { $0.elo > $1.elo }
     }
 
     func findOpponent() {
-        opponentName = "Player\(Int.random(in: 1000...9999))"
-        resetGameBoard()
-        inMatch = true
+        matchmaking = true // Start matchmaking
+        let delay = Double.random(in: 2...10) // Random delay between 2-10 seconds
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            matchmaking = false // End matchmaking
+            opponentName = "Anonymous\(Int.random(in: 1000...9999))"
+            resetGameBoard()
+            inMatch = true
+        }
     }
 
     func finishMatch() {
@@ -117,7 +142,7 @@ struct OnlineView: View {
                 // If 'X' wins (player wins)
                 if winner == "X" {
                     bars += 1
-                    if bars >= 3 {
+                    if bars > 3 {
                         rankUp()  // Rank up if bars reach 3
                     }
                 } else if winner == "O" { // If 'O' wins (bot wins)
@@ -153,16 +178,16 @@ struct OnlineView: View {
         if rank == "Champion" {
             elo += Int.random(in: 10...25)
         } else {
-            bars = 0
+            bars = 1
             rank = nextRank(from: rank)
         }
     }
 
     func rankDown() {
         if rank == "Champion" {
-            elo = max(elo - Int.random(in: 10...25), 0)
+            elo = max(elo - Int.random(in: 20...35), 0)
         } else if rank != "Bronze" {
-            bars = 2
+            bars = 3
             rank = previousRank(from: rank)
         } else {
             bars = 0
@@ -305,8 +330,8 @@ struct LeaderboardEntry: Identifiable {
 
     static func mockLeaderboard() -> [LeaderboardEntry] {
         let usernames = [
-            "CSA", "Revquant", "Swaggyboi19", "Buwuga", "IAMzMarsh",
-            "ItssssssJake", "CallMeBaby", "sss", "YeahImASwifty", "WhatTheDogDoin", "edichessboi23"
+            "CSA (GM)", "Revquant (GM)", "Swaggyboi19 (GM)", "Buwuga (GM)", "IAMzMarsh (GM)",
+            "ItssssssJake (GM)", "CallMeBaby (GM)", "SigmaBoiSigmaBoi (GM)", "YeahImASwifty (GM)", "WhatTheDogDoin (GM)", "edichessboi23 (GM)"
         ]
         
         return usernames.enumerated().map { index, username in
@@ -322,15 +347,16 @@ struct ProgressBar: View {
         HStack {
             ForEach(0..<3) { index in
                 Rectangle()
-                    .frame(width: 30, height: 10)
-                    .foregroundColor(index < bars ? .green : .gray)
+                    .frame(width: 70, height: 30)
+                    .cornerRadius(10)
+                    .foregroundColor(index < bars ? .blue : .gray)
             }
         }
     }
 }
 struct LeaderboardView: View {
     let leaderboard: [LeaderboardEntry]
-    let currentPlayer: String = UserDefaults.standard.string(forKey: "username") ?? "You"
+    let currentPlayer: String = UserDefaults.standard.string(forKey: "username") ?? "You (GM)"
 
     var body: some View {
         NavigationView {
@@ -343,7 +369,7 @@ struct LeaderboardView: View {
                     Text("\(entry.elo)")
                 }
             }
-            .navigationTitle("Global Leaderboard")
+            .navigationTitle("Top GrandMasters")
         }
     }
 }
