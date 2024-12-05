@@ -207,7 +207,7 @@ struct OnlineView: View {
         bars = UserDefaults.standard.integer(forKey: "bars")
         elo = UserDefaults.standard.integer(forKey: "elo")
         if elo == 0 {
-            elo = 800
+            elo = 150
         }
     }
 
@@ -338,11 +338,10 @@ struct LeaderboardEntry: Identifiable {
         
         return usernames.enumerated().map { index, username in
             // Assign decreasing ELOs based on position
-            LeaderboardEntry(name: username, elo: Int(floor(2100 - (Double(index+1) * 43.28374))))
+            LeaderboardEntry(name: username, elo: Int(floor(1500 - (Double(index+1) * 43.28374))))
         }
     }
 }
-
 struct ProgressBar: View {
     @Binding var bars: Int
 
@@ -357,7 +356,6 @@ struct ProgressBar: View {
         }
     }
 }
-
 struct LeaderboardView: View {
     let leaderboard: [LeaderboardEntry]
     let currentPlayer: String = UserDefaults.standard.string(forKey: "username") ?? "You (GM)"
@@ -377,5 +375,4 @@ struct LeaderboardView: View {
         }
     }
 }
-
 

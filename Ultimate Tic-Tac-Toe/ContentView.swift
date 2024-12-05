@@ -106,7 +106,7 @@ struct GameView: View {
                     ForEach(0..<3) { bigRow in
                         HStack(spacing: 5) {
                             ForEach(0..<3) { bigCol in
-                                SubBoardView(
+                                SubBoardView1(
                                     subBoard: $board[bigRow * 3 + bigCol],
                                     isCaptured: mainBoard[bigRow * 3 + bigCol],
                                     isActive: subBoardIndex == nil || subBoardIndex == (bigRow * 3 + bigCol),
@@ -212,7 +212,7 @@ struct GameView: View {
     }
 }
 
-struct SubBoardView: View {
+struct SubBoardView1: View {
     @Binding var subBoard: [String]
     let isCaptured: String
     let isActive: Bool
