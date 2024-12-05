@@ -20,11 +20,19 @@ struct OnlineView: View {
 
     var body: some View {
         VStack {
-            Text("Rank: \(rank)")
-                .font(.title)
-                .padding()
+            if elo >= 1800{
+                Text("Rank: \(rank)" + " (GM)")
+                    .font(.title)
+                    .padding()
+            }
+            else{
+                Text("Rank: \(rank)")
+                    .font(.title)
+                    .padding()
+            }
+
             
-            Text("Gain 1 bar each win. Reach 3 to increase your rank. After Reaching Max Rank (Champion) You Will Have An Elo and Can Get on the Leadeboard.\n Reach 1000 Elo To Become an Official GrandMaster (GM)")
+            Text("Gain 1 bar each win. Reach 3 to increase your rank. After Reaching Max Rank (Champion) You Will Have An Elo and Can Get on the Leadeboard.\n Reach 1800 Elo To Become an Official GrandMaster (GM)")
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .padding()
@@ -36,6 +44,11 @@ struct OnlineView: View {
                 .padding()
 
             if rank == "Champion" {
+                Text("Current Global Elo Rank: \(calculateGlobalRank(userElo: elo, leaderboard: leaderboard))")
+                    .font(.headline)
+                    .padding()
+
+                
                 Text("Elo: \(elo)")
                     .font(.largeTitle)
                     .padding()
@@ -92,7 +105,7 @@ struct OnlineView: View {
             }
 
 
-            Button("GrandMaster Leaderboard") {
+            Button("Global Elo Leaderboard") {
                 showLeaderboard = true
             }
             .font(.headline)
@@ -101,17 +114,38 @@ struct OnlineView: View {
                 LeaderboardView(leaderboard: leaderboard)
             }
         }
+        .onAppear {
+            addToLeaderboardIfEligible()
+        }
         .onAppear(perform: loadProgress)
         .onReceive(timer) { _ in
             updateLeaderboard()
         }
         .navigationTitle("Online Mode")
     }
+    
+    private func addToLeaderboardIfEligible() {
+        // Check if the user's elo qualifies
+        if elo >= 0 {
+            // Calculate the current rank
+            let rank = calculateGlobalRank(userElo: elo, leaderboard: leaderboard)
+            let nameWithRank = "\(rank). You (GM)"
+            
+            // Ensure the "You" entry with rank is unique
+            if !leaderboard.contains(where: { $0.name == nameWithRank }) {
+                let userEntry = LeaderboardEntry(name: nameWithRank, elo: elo)
+                leaderboard.append(userEntry)
+                leaderboard.sort { $0.elo > $1.elo } // Sort by elo, descending
+            }
+        }
+    }
+
+    
 
     func updateLeaderboard() {
         leaderboard = leaderboard.map { entry in
             var updatedEntry = entry
-            updatedEntry.elo += Int.random(in: -3...5)
+            updatedEntry.elo += Int.random(in: -1...5)
             return updatedEntry
         }
         leaderboard.sort { $0.elo > $1.elo }
@@ -119,7 +153,29 @@ struct OnlineView: View {
 
     func findOpponent() {
         matchmaking = true // Start matchmaking
-        let delay = Double.random(in: 2...10) // Random delay between 2-10 seconds
+         // Random delay between 2-10 seconds
+        let delay: Double
+        if rank == "Champion" {
+            delay = Double.random(in: 5...10)
+        }
+        else if rank == "Diamond" {
+            delay = Double.random(in: 4...7)
+        }
+        else if rank == "Platinum" {
+            delay = Double.random(in: 2...5)
+        }
+        else if rank == "Gold" {
+            delay = Double.random(in: 1...3)
+        }
+        else if rank == "Silver" {
+            delay = Double.random(in: 0...2)
+        }
+        else if rank == "Bronze" {
+            delay = Double.random(in: 0...1)
+        }
+        else {
+            delay = Double.random(in: 0...1)
+        }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             matchmaking = false // End matchmaking
@@ -166,9 +222,11 @@ struct OnlineView: View {
         // Handle "Champion" rank ELO adjustment
         if rank == "Champion" {
             if let winner = GameLogic.checkWinner(on: board), winner == "X" {
-                elo += Int.random(in: 10...25)  // Increase ELO if the player wins
+                elo += Int.random(in: 41...53)  // Increase ELO if the player wins
             } else if let winner = GameLogic.checkWinner(on: board), winner == "O" {
-                elo = max(elo - Int.random(in: 10...25), 0)  // Decrease ELO if the bot wins
+                elo = max(elo - Int.random(in: 89...114), 0)  // Decrease ELO if the bot wins
+            } else{
+                elo = max(elo - Int.random(in: 89...114), 0)
             }
         }
 
@@ -178,7 +236,7 @@ struct OnlineView: View {
 
     func rankUp() {
         if rank == "Champion" {
-            elo += Int.random(in: 10...25)
+            elo += Int.random(in: 31...43)
         } else {
             bars = 1
             rank = nextRank(from: rank)
@@ -187,7 +245,7 @@ struct OnlineView: View {
 
     func rankDown() {
         if rank == "Champion" {
-            elo = max(elo - Int.random(in: 20...35), 0)
+            elo = max(elo - Int.random(in: 76...104), 0)
         } else if rank != "Bronze" {
             bars = 3
             rank = previousRank(from: rank)
@@ -207,7 +265,7 @@ struct OnlineView: View {
         bars = UserDefaults.standard.integer(forKey: "bars")
         elo = UserDefaults.standard.integer(forKey: "elo")
         if elo == 0 {
-            elo = 800
+            elo = 400
         }
     }
 
@@ -232,6 +290,17 @@ struct OnlineView: View {
         default: return "Bronze"
         }
     }
+    
+    func calculateGlobalRank(userElo: Int, leaderboard: [LeaderboardEntry]) -> Int {
+        let topElo = 2681 // Base Elo for rank #1
+        let eloStep = 1 // Elo decrease per rank
+        if leaderboard.contains(where: { $0.elo == userElo }) {
+            return leaderboard.firstIndex(where: { $0.elo == userElo })! + 1
+        } else {
+            return (topElo - userElo) / eloStep + 11 // 11 accounts for top 10 leaderboard
+        }
+    }
+
 
     // MARK: - Game Logic
 
@@ -332,15 +401,58 @@ struct LeaderboardEntry: Identifiable {
 
     static func mockLeaderboard() -> [LeaderboardEntry] {
         let usernames = [
-            "CSA (GM)", "Revquant (GM)", "Swaggyboi19 (GM)", "Buwuga (GM)", "IAMzMarsh (GM)",
-            "ItssssssJake (GM)", "CallMeBaby (GM)", "SigmaBoiSigmaBoi (GM)", "YeahImASwifty (GM)", "WhatTheDogDoin (GM)", "edichessboi23 (GM)"
+            "chessking420 (GM)", "pawnstormer (GM)", "silentknight (GM)", "rookiebobby (GM)", "chessaddict99 (GM)",
+            "gmhunter (GM)", "endgameboss (GM)", "bishoptakesyou (GM)", "notmyqueen (GM)", "darkhorse12 (GM)",
+            "matein2pls (GM)", "chessmaniac (GM)", "e4e5c5 (GM)", "rapidgenius (GM)", "kingofblunders (GM)",
+            "pawnpusher22 (GM)", "elochaser (GM)", "sicilianmaster (GM)", "caroCanDoIt (GM)", "timeflagger (GM)",
+            "rookstorm (GM)", "swagbishop (GM)", "queenslayer77 (GM)", "checkmate21 (GM)", "pawntrapgod (GM)",
+            "blitzcrafter (GM)", "tacticalguy (GM)", "stalemate404 (GM)", "chessmaster83 (GM)", "prophylaxis99 (GM)",
+            "alphabrain (GM)", "endgamemaster (GM)", "tempoiskey (GM)", "rookrollin (GM)", "pawnwars (GM)",
+            "bishop4life (GM)", "hangingpiece (GM)", "chesslover07 (GM)", "knightfall23 (GM)", "passpawnpls (GM)",
+            "grindelo24 (GM)", "queensgambito (GM)", "kingchaser (GM)", "rookattack22 (GM)", "fischerwannabe (GM)",
+            "nimzokid (GM)", "endgamewizard (GM)", "chessmonk (GM)", "flagmepls (GM)", "pawnspammer (GM)",
+            "kingslayer99 (GM)", "matesomeone (GM)", "elohero88 (GM)", "kingcrusher13 (GM)", "rapidrookie (GM)",
+            "grandswifty (GM)", "prodigychess (GM)", "whatthefork (GM)", "bishophustler (GM)", "boardwizard (GM)",
+            "fianchetto94 (GM)", "stormrook (GM)", "notyourpawn (GM)", "tempohunter (GM)", "gambitguru (GM)",
+            "sacqueen22 (GM)", "knightcrawler (GM)", "chessfanatic (GM)", "rooknroll (GM)", "passpawn24 (GM)",
+            "forkmaster27 (GM)", "bishopattack99 (GM)", "chessvibes (GM)", "checkmatemaster (GM)", "kingsafetypls (GM)",
+            "rapidslayer (GM)", "rookseeker (GM)", "matefound (GM)", "darkbishop12 (GM)", "eloeater44 (GM)",
+            "queensrival (GM)", "kingchess45 (GM)", "timekiller99 (GM)", "boardking (GM)", "knightmoves4u (GM)",
+            "rookchasers (GM)", "pawnkiller99 (GM)", "matehunter (GM)", "bishoptakesall (GM)", "flagitfast (GM)",
+            "chessforever (GM)", "endgamemagic (GM)", "pawnmaster21 (GM)", "chesswinsyou (GM)", "eloendgame (GM)",
+            "bishopfinesse (GM)", "pushpawnpls (GM)", "silentrook (GM)", "kingofsquares (GM)", "checkyourmoves (GM)",
+            "notsofastgm (GM)", "queentrapgod (GM)", "elochaser23 (GM)", "rookieboss (GM)", "boardgrind99 (GM)", "GrandmasterGabe (GM)", "CheckmateCharlie (GM)", "KnightKnave (GM)", "RookRampage (GM)",
+            "PawnPusher420 (GM)", "ChessFanatic91 (GM)", "StrategicSteve (GM)", "MateMaster77 (GM)",
+            "BlitzBobby (GM)", "ProphylaxisPro (GM)", "KingSlayer08 (GM)", "EloHunter99 (GM)",
+            "QueenCrusher (GM)", "SacForGlory (GM)", "TempoMaster (GM)", "EndgameAce (GM)",
+            "DarkSquareMaster (GM)", "KnightLife22 (GM)", "PawnStorm77 (GM)", "RookTactician (GM)",
+            "ChessWizard99 (GM)", "CheckmatePro (GM)", "FischerFury (GM)", "BoardKing (GM)",
+            "FlaggingExpert (GM)", "TacticalLegend (GM)", "TempoChaser (GM)", "PassedPawnGod (GM)",
+            "BlunderFree (GM)", "BishopBoss (GM)", "StalemateHunter (GM)", "KingSafety69 (GM)",
+            "ChessAddict2024 (GM)", "RookRoller (GM)", "AlphaPawn (GM)", "EndgameLegend (GM)",
+            "KnightKing42 (GM)", "GambitGuru (GM)", "EloSeeker22 (GM)", "ForkMaster99 (GM)",
+            "TimeTroubleGM (GM)", "KingCrusher24 (GM)", "BlitzFrenzy (GM)", "SacrificeMaster (GM)",
+            "PawnPromotion99 (GM)", "ChessChampion21 (GM)", "GrandmasterFlex (GM)", "KnightDreamer (GM)",
+            "BlunderBeGone (GM)", "DarkHorseGM (GM)", "TempoWizard (GM)", "PassedPawnPro (GM)",
+            "BishopSniper (GM)", "RapidGenius (GM)", "MateHunter88 (GM)", "FlaggingPapi (GM)",
+            "RookSnatcher (GM)", "PawnWarlord (GM)", "SilentKnight (GM)", "TempoBandit (GM)",
+            "EndgameWiz (GM)", "TacticsOverlord (GM)", "SwindleMaster (GM)", "MateFinder07 (GM)",
+            "BlitzExpert (GM)", "BoardLegend (GM)", "PawnPusher69 (GM)", "DarkSquareGM (GM)",
+            "KingOfBlunders (GM)", "CheckMateYo (GM)", "EloGoblin (GM)", "GambitGang (GM)",
+            "Knightmare24 (GM)", "BackRankBandit (GM)", "EndgameSlayer (GM)", "RookMaster99 (GM)",
+            "BlitzChad (GM)", "BoardSensei (GM)", "ChessSweat420 (GM)", "PawnStar44 (GM)",
+            "BlunderSaver (GM)", "TacticsTyrant (GM)", "FlaggingDemon (GM)", "SacrificeDealer (GM)","EndgameAcePro (GM)",
         ]
-        
-        return usernames.enumerated().map { index, username in
-            // Assign decreasing ELOs based on position
-            LeaderboardEntry(name: username, elo: Int(floor(2100 - (Double(index+1) * 43.28374))))
+
+        // Shuffle the usernames and take the first 40
+        let randomUsernames = usernames.prefix(100)
+
+        // Create leaderboard entries for the selected usernames
+        return randomUsernames.enumerated().map { index, username in
+            LeaderboardEntry(name: username, elo: 2550 + Int.random(in: 17...58))
         }
     }
+
 }
 
 struct ProgressBar: View {
@@ -367,13 +479,13 @@ struct LeaderboardView: View {
             List(leaderboard) { entry in
                 HStack {
                     Text(entry.name)
-                        .font(entry.name == currentPlayer ? .headline : .body)
-                        .foregroundColor(entry.name == currentPlayer ? .blue : .primary)
+                        .font(entry.name.contains("You (GM)") ? .headline : .body)
+                        .foregroundColor(entry.name.contains("You (GM)") ? .blue : .primary)
                     Spacer()
                     Text("\(entry.elo)")
                 }
             }
-            .navigationTitle("Top GrandMasters")
+            .navigationTitle("Global Elo Leaderboard")
         }
     }
 }
