@@ -32,7 +32,7 @@ struct OnlineView: View {
             }
 
             
-            Text("Gain 1 bar each win. Reach 3 to increase your rank. After Reaching Max Rank (Champion) You Will Have An Elo and Can Get on the Leadeboard.\n Reach 1800 Elo To Become an Official GrandMaster (GM)")
+            Text("Gain 1 bar each win. Reach 3 to increase your rank. After reaching max rank (Champion), you will have an Elo (your rating) and can get on the leadeboard.\n Reach 1800 Elo to attain the Grandmaster (GM) title")
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .padding()
