@@ -8,7 +8,7 @@ struct ContentView: View {
     private let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        NavigationStack{
+        NavigationView {
             VStack(spacing: 20) {
                 Text("Ultimate Tic Tac Toe")
                     .font(.largeTitle)
@@ -106,7 +106,7 @@ struct GameView: View {
                     ForEach(0..<3) { bigRow in
                         HStack(spacing: 5) {
                             ForEach(0..<3) { bigCol in
-                                SubBoardView1(
+                                SubBoardView(
                                     subBoard: $board[bigRow * 3 + bigCol],
                                     isCaptured: mainBoard[bigRow * 3 + bigCol],
                                     isActive: subBoardIndex == nil || subBoardIndex == (bigRow * 3 + bigCol),
@@ -163,7 +163,7 @@ struct GameView: View {
         }
 
         // Determine next active sub-board
-        if board[subIndex].allSatisfy { !$0.isEmpty } || mainBoard[subIndex] != "" {
+        if board[subIndex].allSatisfy({ !$0.isEmpty }) || mainBoard[subIndex] != "" {
             // If the next sub-board is full or captured, allow any move
             subBoardIndex = nil
         } else {
@@ -185,24 +185,107 @@ struct GameView: View {
     private func botMove() {
         guard winner == nil else { return } // Skip if there's a winner
 
-        // Randomly select a valid move for the bot
-        if let activeSubBoard = subBoardIndex, mainBoard[activeSubBoard].isEmpty {
-            let availableSlots = board[activeSubBoard].enumerated().filter { $0.element.isEmpty }.map { $0.offset }
-            if let randomSlot = availableSlots.randomElement() {
-                handleMove(activeSubBoard, randomSlot)
-            }
-        } else {
-            // Select any valid sub-board and slot
-            let availableBoards = board.enumerated().filter { mainBoard[$0.offset].isEmpty }.map { $0.offset }
-            if let randomBoard = availableBoards.randomElement() {
-                let availableSlots = board[randomBoard].enumerated().filter { $0.element.isEmpty }.map { $0.offset }
-                if let randomSlot = availableSlots.randomElement() {
-                    handleMove(randomBoard, randomSlot)
+        func findWinningMove(for player: String, in subBoard: [String]) -> Int? {
+            let winningPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6]             // Diagonals
+            ]
+            for pattern in winningPatterns {
+                let values = pattern.map { subBoard[$0] }
+                if values.filter({ $0 == player }).count == 2 && values.contains("") {
+                    return pattern.first { subBoard[$0].isEmpty }
                 }
             }
+            return nil
+        }
+
+        func findBestMove(in subBoard: [String]) -> Int? {
+            let corners = [0, 2, 6, 8], edges = [1, 3, 5, 7]
+            for position in corners where subBoard[position].isEmpty {
+                return position
+            }
+            for position in edges where subBoard[position].isEmpty {
+                return position
+            }
+            return nil
+        }
+
+        func wouldSendPlayerToWinningMove(_ boardIndex: Int, _ slotIndex: Int) -> Bool {
+            let nextSubBoard = slotIndex
+            guard mainBoard[nextSubBoard].isEmpty else { return false }
+            return findWinningMove(for: "X", in: board[nextSubBoard]) != nil
+        }
+
+        func getSafeMoves(_ boardIndex: Int) -> [Int] {
+            return board[boardIndex].enumerated()
+                .filter { $0.element.isEmpty && !wouldSendPlayerToWinningMove(boardIndex, $0.offset) }
+                .map { $0.offset }
+        }
+
+        func getFallbackMove(_ boardIndex: Int) -> Int? {
+            return board[boardIndex].enumerated()
+                .filter { $0.element.isEmpty }
+                .map { $0.offset }
+                .randomElement()
+        }
+
+        // Bot plays in the specified sub-board if it is active and available
+        if let activeSubBoard = subBoardIndex, mainBoard[activeSubBoard].isEmpty {
+            // Winning move (always prioritize winning a mini-board, even if unsafe)
+            if let winningSlot = findWinningMove(for: "O", in: board[activeSubBoard]) {
+                handleMove(activeSubBoard, winningSlot)
+                return
+            }
+
+            // Block opponent's win
+            if let blockingSlot = findWinningMove(for: "X", in: board[activeSubBoard]), !wouldSendPlayerToWinningMove(activeSubBoard, blockingSlot) {
+                handleMove(activeSubBoard, blockingSlot)
+                return
+            }
+
+            // Strategic safe move
+            let safeMoves = getSafeMoves(activeSubBoard)
+            if let bestSlot = safeMoves.first {
+                handleMove(activeSubBoard, bestSlot)
+                return
+            }
+
+            // If all moves are unsafe, fallback to any legal move in the active sub-board
+            if let fallbackSlot = getFallbackMove(activeSubBoard) {
+                handleMove(activeSubBoard, fallbackSlot)
+                return
+            }
+        }
+
+        // If no active sub-board or the active sub-board is unavailable, choose freely
+        let availableBoards = board.enumerated().filter { mainBoard[$0.offset].isEmpty }.map { $0.offset }
+        for boardIndex in availableBoards {
+            // Winning move (always prioritize winning a mini-board, even if unsafe)
+            if let winningSlot = findWinningMove(for: "O", in: board[boardIndex]) {
+                handleMove(boardIndex, winningSlot)
+                return
+            }
+
+            // Block opponent's win
+            if let blockingSlot = findWinningMove(for: "X", in: board[boardIndex]), !wouldSendPlayerToWinningMove(boardIndex, blockingSlot) {
+                handleMove(boardIndex, blockingSlot)
+                return
+            }
+
+            // Strategic safe move
+            let safeMoves = getSafeMoves(boardIndex)
+            if let bestSlot = safeMoves.first {
+                handleMove(boardIndex, bestSlot)
+                return
+            }
+        }
+
+        // If all moves are unsafe, fallback to a random valid move
+        if let randomBoard = availableBoards.randomElement(), let fallbackSlot = getFallbackMove(randomBoard) {
+            handleMove(randomBoard, fallbackSlot)
         }
     }
-
     private func resetGame() {
         board = Array(repeating: Array(repeating: "", count: 9), count: 9)
         activePlayer = "X"
@@ -212,7 +295,7 @@ struct GameView: View {
     }
 }
 
-struct SubBoardView1: View {
+struct SubBoardView: View {
     @Binding var subBoard: [String]
     let isCaptured: String
     let isActive: Bool
