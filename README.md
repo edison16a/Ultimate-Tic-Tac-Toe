@@ -3,7 +3,7 @@
 Ultimate Tic Tac Toe – Strategy Meets Fun!
 Made By Edison Law and Revaant Srivastav
 
-**App Store Link:** https://apps.apple.com/us/app/ultimate-chess-royale/id6739193423
+**App Store Link:** [https://apps.apple.com/us/app/ultimate-chess-royale/id6739193423](https://apps.apple.com/us/app/ultimate-tic-tac-toe-app/id6738972861)
 
 Ready to challenge your brain and have fun? Dive into the exciting world of Ultimate Tic Tac Toe, the ultimate twist on the classic game! With larger boards, strategic gameplay, and engaging modes, this isn’t your ordinary Tic Tac Toe—it's a test of wits, strategy, and ultimate fun.
 
